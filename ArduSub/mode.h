@@ -271,6 +271,7 @@ public:
     bool allows_arming(bool from_gcs) const override { return true; }
     bool is_autopilot() const override { return false; }
     void control_depth();
+    void control_lat();
 
 protected:
 

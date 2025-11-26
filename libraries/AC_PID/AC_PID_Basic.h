@@ -20,6 +20,7 @@ public:
     // the derivative is then calculated and filtered
     // the integral is then updated based on the setting of the limit flag
     float update_all(float target, float measurement, float dt, bool limit = false) WARN_IF_UNUSED;
+    float update_all(float &error, float dt, bool limit = false) WARN_IF_UNUSED;
     float update_all(float target, float measurement, float dt, bool limit_neg, bool limit_pos) WARN_IF_UNUSED;
 
     // update the integral

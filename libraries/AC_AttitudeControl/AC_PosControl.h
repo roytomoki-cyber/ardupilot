@@ -12,6 +12,7 @@
 #include <AC_PID/AC_PID_2D.h>       // PID library (2-axis)
 #include <AP_InertialNav/AP_InertialNav.h>  // Inertial Navigation library
 #include <AP_Scripting/AP_Scripting_config.h>
+#include <AP_DAL/AP_DAL.h>
 #include "AC_AttitudeControl.h"     // Attitude control library
 
 #include <AP_Logger/LogStructure.h>
@@ -150,6 +151,7 @@ public:
     ///     Desired velocity and accelerations are added to these corrections as they are calculated
     ///     Kinematically consistent target position and desired velocity and accelerations should be provided before calling this function
     void update_xy_controller();
+    float update_y_controller(float &error);
 
     ///
     /// Vertical position controller
@@ -530,10 +532,12 @@ protected:
     AC_PID_2D       _pid_vel_xy;        // XY axis velocity controller to convert velocity error to desired acceleration
     AC_PID_Basic    _pid_vel_z;         // Z axis velocity controller to convert climb rate error to desired acceleration
     AC_PID          _pid_accel_z;       // Z axis acceleration controller to convert desired acceleration to throttle output
+    AC_PID          _pid_accel_y;       // Y axis acceleration controller to convert desired acceleration to throttle output
 
     // internal variables
     float       _dt;                    // time difference (in seconds) since the last loop time
-    uint32_t    _last_update_xy_ticks;  // ticks of last last update_xy_controller call
+    uint32_t    _last_update_xy_ticks; 
+    uint32_t    _last_update_y_ticks;// ticks of last last update_xy_controller call
     uint32_t    _last_update_z_ticks;   // ticks of last update_z_controller call
     float       _vel_max_xy_cms;        // max horizontal speed in cm/s used for kinematic shaping
     float       _vel_max_up_cms;        // max climb rate in cm/s used for kinematic shaping

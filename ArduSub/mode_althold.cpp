@@ -1,4 +1,5 @@
 #include "Sub.h"
+#include <iostream>
 
 
 bool ModeAlthold::init(bool ignore_checks) {
@@ -100,10 +101,12 @@ void ModeAlthold::run_pre()
 void ModeAlthold::run_post()
 {
     motors.set_forward(channel_forward->norm_input());
-    motors.set_lateral(channel_lateral->norm_input());
+    control_lat();
+
 }
 
 void ModeAlthold::control_depth() {
+    
     float target_climb_rate_cm_s = sub.get_pilot_desired_climb_rate(channel_throttle->get_control_in());
     target_climb_rate_cm_s = constrain_float(target_climb_rate_cm_s, -sub.get_pilot_speed_dn(), g.pilot_speed_up);
 
@@ -119,4 +122,17 @@ void ModeAlthold::control_depth() {
 
     position_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate_cm_s);
     position_control->update_z_controller();
+}
+
+
+// Création d'un PID 1D de correction d'erreur
+void ModeAlthold::control_lat() {
+    float error = channel_lateral->norm_input();
+    
+    float thr_out = position_control->update_y_controller(error);
+    std::cout << thr_out << std::endl;
+
+    motors.set_lateral(thr_out);
+
+
 }

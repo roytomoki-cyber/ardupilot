@@ -6,6 +6,7 @@
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_Scheduler/AP_Scheduler.h>
 
+
 extern const AP_HAL::HAL& hal;
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
@@ -341,6 +342,7 @@ AC_PosControl::AC_PosControl(AP_AHRS_View& ahrs, const AP_InertialNav& inav,
     _pid_vel_xy(POSCONTROL_VEL_XY_P, POSCONTROL_VEL_XY_I, POSCONTROL_VEL_XY_D, 0.0f, POSCONTROL_VEL_XY_IMAX, POSCONTROL_VEL_XY_FILT_HZ, POSCONTROL_VEL_XY_FILT_D_HZ),
     _pid_vel_z(POSCONTROL_VEL_Z_P, 0.0f, 0.0f, 0.0f, POSCONTROL_VEL_Z_IMAX, POSCONTROL_VEL_Z_FILT_HZ, POSCONTROL_VEL_Z_FILT_D_HZ),
     _pid_accel_z(POSCONTROL_ACC_Z_P, POSCONTROL_ACC_Z_I, POSCONTROL_ACC_Z_D, 0.0f, POSCONTROL_ACC_Z_IMAX, 0.0f, POSCONTROL_ACC_Z_FILT_HZ, 0.0f),
+    _pid_accel_y(POSCONTROL_ACC_Z_P, POSCONTROL_ACC_Z_I, POSCONTROL_ACC_Z_D, 0.0f, POSCONTROL_ACC_Z_IMAX, 0.0f, POSCONTROL_ACC_Z_FILT_HZ, 0.0f),
     _vel_max_xy_cms(POSCONTROL_SPEED),
     _vel_max_up_cms(POSCONTROL_SPEED_UP),
     _vel_max_down_cms(POSCONTROL_SPEED_DOWN),
@@ -1065,6 +1067,24 @@ void AC_PosControl::update_z_controller()
     } else {
         _limit_vector.z = 0.0f;
     }
+}
+
+float AC_PosControl::update_y_controller(float &error)
+{
+    _last_update_y_ticks = AP::scheduler().ticks32();
+    
+    // Calculate vertical acceleration
+    /*const float y_accel_meas = AP::ahrs().get_accel().y ;*/
+    float thr_out;
+    // ensure imax is always large enough to overpower hover throttle
+    
+    thr_out = _pid_accel_y.update_error(2.0f* error/ sq(_dt) , _dt, false) * 0.001f;
+    thr_out += _pid_accel_y.get_ff() * 0.001f;
+    
+    return thr_out ;
+
+    
+    
 }
 
 
