@@ -1074,17 +1074,12 @@ float AC_PosControl::update_y_controller(float &error)
     _last_update_y_ticks = AP::scheduler().ticks32();
     
     // Calculate vertical acceleration
-    /*const float y_accel_meas = AP::ahrs().get_accel().y ;*/
     float thr_out;
-    // ensure imax is always large enough to overpower hover throttle
     
     thr_out = _pid_accel_y.update_error(2.0f* error/ sq(_dt) , _dt, false) * 0.001f;
     thr_out += _pid_accel_y.get_ff() * 0.001f;
     
     return thr_out ;
-
-    
-    
 }
 
 
