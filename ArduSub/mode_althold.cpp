@@ -130,7 +130,6 @@ void ModeAlthold::control_lat() {
     float error = channel_lateral->norm_input();
     
     float thr_out = position_control->update_y_controller(error);
-    std::cout << thr_out << std::endl;
 
     motors.set_lateral(thr_out);
 
