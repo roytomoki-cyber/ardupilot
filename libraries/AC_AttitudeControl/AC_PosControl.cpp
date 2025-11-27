@@ -5,7 +5,8 @@
 #include <AP_Motors/AP_Motors.h>    // motors library
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_Scheduler/AP_Scheduler.h>
-
+#include <AP_Logger/AP_Logger.h>
+#include <fstream>
 
 extern const AP_HAL::HAL& hal;
 
@@ -342,7 +343,7 @@ AC_PosControl::AC_PosControl(AP_AHRS_View& ahrs, const AP_InertialNav& inav,
     _pid_vel_xy(POSCONTROL_VEL_XY_P, POSCONTROL_VEL_XY_I, POSCONTROL_VEL_XY_D, 0.0f, POSCONTROL_VEL_XY_IMAX, POSCONTROL_VEL_XY_FILT_HZ, POSCONTROL_VEL_XY_FILT_D_HZ),
     _pid_vel_z(POSCONTROL_VEL_Z_P, 0.0f, 0.0f, 0.0f, POSCONTROL_VEL_Z_IMAX, POSCONTROL_VEL_Z_FILT_HZ, POSCONTROL_VEL_Z_FILT_D_HZ),
     _pid_accel_z(POSCONTROL_ACC_Z_P, POSCONTROL_ACC_Z_I, POSCONTROL_ACC_Z_D, 0.0f, POSCONTROL_ACC_Z_IMAX, 0.0f, POSCONTROL_ACC_Z_FILT_HZ, 0.0f),
-    _pid_accel_y(POSCONTROL_ACC_Z_P, POSCONTROL_ACC_Z_I, POSCONTROL_ACC_Z_D, 0.0f, POSCONTROL_ACC_Z_IMAX, 0.0f, POSCONTROL_ACC_Z_FILT_HZ, 0.0f),
+    _pid_accel_y(0.075f, 0.01f/20, 1.0f/30.0f, 0.0f, 100.0f, 0.0f, 20.0f, 5.0f),
     _vel_max_xy_cms(POSCONTROL_SPEED),
     _vel_max_up_cms(POSCONTROL_SPEED_UP),
     _vel_max_down_cms(POSCONTROL_SPEED_DOWN),
@@ -1069,19 +1070,48 @@ void AC_PosControl::update_z_controller()
     }
 }
 
+
+
 float AC_PosControl::update_y_controller(float &error)
 {
-    _last_update_y_ticks = AP::scheduler().ticks32();
+    if (!is_positive(_dt)){
+        return 0.0f;
+   }
     
-    // Calculate vertical acceleration
-    float thr_out;
+    float accel_target_cmss = error * 100.0f;
+    Vector3f accel_body = AP::ahrs().get_accel();
+    float accel_meas_y = accel_body.y ;
+
     
-    thr_out = _pid_accel_y.update_error(2.0f* error/ sq(_dt) , _dt, false) * 0.001f;
-    thr_out += _pid_accel_y.get_ff() * 0.001f;
+    float thr_out = _pid_accel_y.update_all(accel_target_cmss, accel_meas_y, _dt);
+
+    thr_out += _pid_accel_y.get_ff();
+
+    thr_out *= 0.1f;
     
-    return thr_out ;
+    
+   csvlog(error,thr_out);
+
+    return constrain_float(thr_out, -1.0f , 1.0f);
+
+    
+    
 }
 
+
+void AC_PosControl::csvlog(float error, float thr_out){
+    std::ofstream log_out("log_PID_4.csv", std::ios::app);
+    
+    
+    if(log_out.is_open()){
+        log_out<<error<<";";
+        log_out<<_pid_accel_y.get_p()<<";";
+        log_out<<_pid_accel_y.get_i()<<";";
+        log_out<<_pid_accel_y.get_d()<<";";
+        log_out<<thr_out<<std::endl;
+    }
+
+}
 
 ///
 /// Accessors

@@ -152,7 +152,7 @@ public:
     ///     Kinematically consistent target position and desired velocity and accelerations should be provided before calling this function
     void update_xy_controller();
     float update_y_controller(float &error);
-
+    void csvlog(float error, float thr_out);
     ///
     /// Vertical position controller
     ///

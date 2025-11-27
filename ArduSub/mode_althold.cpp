@@ -127,11 +127,29 @@ void ModeAlthold::control_depth() {
 
 // Création d'un PID 1D de correction d'erreur
 void ModeAlthold::control_lat() {
-    float error = channel_lateral->norm_input();
+    
+    //Implémentation de l'erreur 
+    //float input = channel_lateral->norm_input();
+    static float error{0.0f};
+    
+    static float last_time = AP_HAL::millis()*0.001f;
+    
+
+    float temps_s = AP_HAL::millis()*0.001f;
+    float periode = 10.0f;
+    float frec = 1/periode;
+    float ampl = 0.5f;
+
+    if(fabsf(last_time - temps_s) > 0.01f){
+
+        error = ampl*sinf(frec*temps_s*2*M_PI);
+        last_time = temps_s;
+    }
+    //Partie qui marche :  corrige l'erreur en position
     
     float thr_out = position_control->update_y_controller(error);
-
-    motors.set_lateral(thr_out);
+    
+    motors.set_lateral(-thr_out);
 
 
 }
