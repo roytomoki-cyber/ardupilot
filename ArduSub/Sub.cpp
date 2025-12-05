@@ -35,6 +35,7 @@ Sub::Sub()
           wp_nav(inertial_nav, ahrs_view, pos_control, attitude_control),
           loiter_nav(inertial_nav, ahrs_view, pos_control, attitude_control),
           circle_nav(inertial_nav, ahrs_view, pos_control),
+          chad_sensor(nullptr),
           param_loader(var_info),
           flightmode(&mode_manual),
           auto_mode(Auto_WP),

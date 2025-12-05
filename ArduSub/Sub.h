@@ -64,6 +64,7 @@
 #include <AP_Proximity/AP_Proximity.h>
 #include <AP_Rally/AP_Rally.h>
 
+
 // Local modules
 #include "defines.h"
 #include "config.h"
@@ -98,6 +99,8 @@
 #include <AP_Scripting/AP_Scripting.h>
 #endif
 
+#include <AP_ChadMode/UDPSensor_Chadmode.h>
+
 class Sub : public AP_Vehicle {
 public:
     friend class GCS_MAVLINK_Sub;
@@ -118,7 +121,8 @@ public:
     friend class ModeCircle;
     friend class ModeSurface;
     friend class ModeMotordetect;
-
+    friend class CHAD_Sensor;
+    friend class AC_PosControl;
     Sub(void);
 
 protected:
@@ -341,6 +345,7 @@ private:
     AC_WPNav wp_nav;
     AC_Loiter loiter_nav;
     AC_Circle circle_nav;
+    CHAD_Sensor chad_sensor;
 
     // Camera
 #if AP_CAMERA_ENABLED
@@ -564,6 +569,11 @@ private:
     bool get_wp_distance_m(float &distance) const override;
     bool get_wp_bearing_deg(float &bearing) const override;
     bool get_wp_crosstrack_error_m(float &xtrack_error) const override;
+
+    void init_CHAD_Sensor(){chad_sensor.init();};
+    void update_chad_control(){chad_sensor.update();} ;
+    
+
 
     enum Failsafe_Action {
         Failsafe_Action_None    = 0,

@@ -5,8 +5,8 @@
 #include <AP_Motors/AP_Motors.h>    // motors library
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_Scheduler/AP_Scheduler.h>
-#include <AP_Logger/AP_Logger.h>
-#include <fstream>
+#include <AP_Logcsv/logging_CSV.h>
+#include <../ArduSub/Sub.h> 
 
 extern const AP_HAL::HAL& hal;
 
@@ -23,6 +23,12 @@ extern const AP_HAL::HAL& hal;
  # define POSCONTROL_ACC_Z_IMAX                 800     // vertical acceleration controller IMAX gain default
  # define POSCONTROL_ACC_Z_FILT_HZ              10.0f   // vertical acceleration controller input filter default
  # define POSCONTROL_ACC_Z_DT                   0.02f   // vertical acceleration controller dt default
+ # define POSCONTROL_ACC_Y_P                    0.075f    // vertical acceleration controller P gain default
+ # define POSCONTROL_ACC_Y_I                    0.01f/20    // vertical acceleration controller I gain default
+ # define POSCONTROL_ACC_Y_D                    1.0f/30    // vertical acceleration controller D gain default
+ # define POSCONTROL_ACC_Y_IMAX                 100     // vertical acceleration controller IMAX gain default
+ # define POSCONTROL_ACC_Y_FILT_HZ              20.0f   // vertical acceleration controller input filter default
+ # define POSCONTROL_ACC_Y_DT                   0.0025f // vertical acceleration controller dt default
  # define POSCONTROL_POS_XY_P                   0.5f    // horizontal position controller P gain default
  # define POSCONTROL_VEL_XY_P                   0.7f    // horizontal velocity controller P gain default
  # define POSCONTROL_VEL_XY_I                   0.35f    // horizontal velocity controller I gain default
@@ -43,6 +49,12 @@ extern const AP_HAL::HAL& hal;
  # define POSCONTROL_ACC_Z_IMAX                 100     // vertical acceleration controller IMAX gain default
  # define POSCONTROL_ACC_Z_FILT_HZ              20.0f   // vertical acceleration controller input filter default
  # define POSCONTROL_ACC_Z_DT                   0.0025f // vertical acceleration controller dt default
+ # define POSCONTROL_ACC_Y_P                    0.075f    // vertical acceleration controller P gain default
+ # define POSCONTROL_ACC_Y_I                    0.01f/20    // vertical acceleration controller I gain default
+ # define POSCONTROL_ACC_Y_D                    1.0f/30    // vertical acceleration controller D gain default
+ # define POSCONTROL_ACC_Y_IMAX                 100     // vertical acceleration controller IMAX gain default
+ # define POSCONTROL_ACC_Y_FILT_HZ              20.0f   // vertical acceleration controller input filter default
+ # define POSCONTROL_ACC_Y_DT                   0.0025f // vertical acceleration controller dt default
  # define POSCONTROL_POS_XY_P                   1.0f    // horizontal position controller P gain default
  # define POSCONTROL_VEL_XY_P                   1.0f    // horizontal velocity controller P gain default
  # define POSCONTROL_VEL_XY_I                   0.5f    // horizontal velocity controller I gain default
@@ -63,6 +75,14 @@ extern const AP_HAL::HAL& hal;
  # define POSCONTROL_ACC_Z_IMAX                 800     // vertical acceleration controller IMAX gain default
  # define POSCONTROL_ACC_Z_FILT_HZ              20.0f   // vertical acceleration controller input filter default
  # define POSCONTROL_ACC_Z_DT                   0.0025f // vertical acceleration controller dt default
+ 
+ # define POSCONTROL_ACC_Y_P                    0.075f    // vertical acceleration controller P gain default
+ # define POSCONTROL_ACC_Y_I                    0.01f/20    // vertical acceleration controller I gain default
+ # define POSCONTROL_ACC_Y_D                    1.0f/30    // vertical acceleration controller D gain default
+ # define POSCONTROL_ACC_Y_IMAX                 100     // vertical acceleration controller IMAX gain default
+ # define POSCONTROL_ACC_Y_FILT_HZ              20.0f   // vertical acceleration controller input filter default
+ # define POSCONTROL_ACC_Y_DT                   0.0025f // vertical acceleration controller dt default
+ 
  # define POSCONTROL_POS_XY_P                   1.0f    // horizontal position controller P gain default
  # define POSCONTROL_VEL_XY_P                   2.0f    // horizontal velocity controller P gain default
  # define POSCONTROL_VEL_XY_I                   1.0f    // horizontal velocity controller I gain default
@@ -235,8 +255,7 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @Description: Accel (vertical) Error notch filter index
     // @Range: 1 8
     // @User: Advanced
-
-    AP_SUBGROUPINFO(_pid_accel_z, "_ACCZ_", 4, AC_PosControl, AC_PID),
+    AP_SUBGROUPINFO(_pid_accel_z, "_ACCY_", 4, AC_PosControl, AC_PID),
 
     // @Param: _POSXY_P
     // @DisplayName: Position (horizontal) controller P gain
@@ -325,6 +344,7 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_JERK_Z", 11, AC_PosControl, _shaping_jerk_z, POSCONTROL_JERK_Z),
 
+
     AP_GROUPEND
 };
 
@@ -343,7 +363,8 @@ AC_PosControl::AC_PosControl(AP_AHRS_View& ahrs, const AP_InertialNav& inav,
     _pid_vel_xy(POSCONTROL_VEL_XY_P, POSCONTROL_VEL_XY_I, POSCONTROL_VEL_XY_D, 0.0f, POSCONTROL_VEL_XY_IMAX, POSCONTROL_VEL_XY_FILT_HZ, POSCONTROL_VEL_XY_FILT_D_HZ),
     _pid_vel_z(POSCONTROL_VEL_Z_P, 0.0f, 0.0f, 0.0f, POSCONTROL_VEL_Z_IMAX, POSCONTROL_VEL_Z_FILT_HZ, POSCONTROL_VEL_Z_FILT_D_HZ),
     _pid_accel_z(POSCONTROL_ACC_Z_P, POSCONTROL_ACC_Z_I, POSCONTROL_ACC_Z_D, 0.0f, POSCONTROL_ACC_Z_IMAX, 0.0f, POSCONTROL_ACC_Z_FILT_HZ, 0.0f),
-    _pid_accel_y(0.075f, 0.01f/20, 1.0f/30.0f, 0.0f, 100.0f, 0.0f, 20.0f, 5.0f),
+    _pid_accel_y(POSCONTROL_ACC_Y_P, POSCONTROL_ACC_Y_I, POSCONTROL_ACC_Y_D, 0.0f, POSCONTROL_ACC_Y_IMAX, 0.0f, POSCONTROL_ACC_Y_FILT_HZ, 5.0f),
+    _pid_accel_x(POSCONTROL_ACC_Y_P, POSCONTROL_ACC_Y_I, POSCONTROL_ACC_Y_D, 0.0f, POSCONTROL_ACC_Y_IMAX, 0.0f, POSCONTROL_ACC_Y_FILT_HZ, 5.0f),
     _vel_max_xy_cms(POSCONTROL_SPEED),
     _vel_max_up_cms(POSCONTROL_SPEED_UP),
     _vel_max_down_cms(POSCONTROL_SPEED_DOWN),
@@ -1071,48 +1092,92 @@ void AC_PosControl::update_z_controller()
 }
 
 
-
-float AC_PosControl::update_y_controller(float &error)
+float AC_PosControl::update_y_controller()
 {
     if (!is_positive(_dt)){
         return 0.0f;
-   }
-    
+    }
+    //static Logging_csv logout("log.csv");
+    CHAD_Sensor::CHAD_Dir axis = CHAD_Sensor::CHAD_Dir::Y_AXIS; 
+
+    //logout.write("avant",(int) sub.chad_sensor.is_enable_PID(axis));        
+
+    if (fabsf(sub.chad_sensor.get_last_time()-AP_HAL::millis()) > 500 ){
+        sub.chad_sensor.disable_PID(axis);
+    }
+    //logout.write("apres",(int) sub.chad_sensor.is_enable_PID(axis));   
+    sub.chad_sensor.update_PID(_pid_accel_y, axis);
+
+
+    float k_error = sub.chad_sensor.get_input_k(axis) ;
+
+    float error = sub.chad_sensor.get_error(axis) * k_error; 
+
     float accel_target_cmss = error * 100.0f;
     Vector3f accel_body = AP::ahrs().get_accel();
-    float accel_meas_y = accel_body.y ;
+    float accel_meas_y = accel_body.y;
+
+    //static Logging_csv logout("log_eror_y.csv");
+
+    
 
     
     float thr_out = _pid_accel_y.update_all(accel_target_cmss, accel_meas_y, _dt);
 
     thr_out += _pid_accel_y.get_ff();
 
-    thr_out *= 0.1f;
-    
-    
-   csvlog(error,thr_out);
+    thr_out *= 0.05f;
+    //logout.write("thr_out + PID values", thr_out, _pid_accel_y.get_p(), _pid_accel_y.get_i(), _pid_accel_y.get_d(),0.0f,0.0f,error,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f);
+
+    //static Logging_csv logout("log-PID.csv");
+
+    //logout.write(error,_pid_accel_y.get_p(),_pid_accel_y.get_i(),_pid_accel_y.get_d(), thr_out);
 
     return constrain_float(thr_out, -1.0f , 1.0f);
 
-    
-    
 }
 
-
-void AC_PosControl::csvlog(float error, float thr_out){
-    std::ofstream log_out("log_PID_4.csv", std::ios::app);
-    
-    
-    if(log_out.is_open()){
-        log_out<<error<<";";
-        log_out<<_pid_accel_y.get_p()<<";";
-        log_out<<_pid_accel_y.get_i()<<";";
-        log_out<<_pid_accel_y.get_d()<<";";
-        log_out<<thr_out<<std::endl;
+float AC_PosControl::update_x_controller()
+{
+    if (!is_positive(_dt)){
+        return 0.0f;
     }
 
-}
+    CHAD_Sensor::CHAD_Dir axis = CHAD_Sensor::CHAD_Dir::X_AXIS; 
+    
+    //static Logging_csv logout("log_eror_x.csv");
+    if (fabsf(sub.chad_sensor.get_last_time()-AP_HAL::millis()) > 500 ){
+        sub.chad_sensor.disable_PID(axis);
+        //logout.write("if activé", 0.0f);
+    }
+    
 
+    sub.chad_sensor.update_PID(_pid_accel_x, axis);
+    
+    float k_error = sub.chad_sensor.get_input_k(axis) ;
+
+    float error = sub.chad_sensor.get_error(axis) * k_error; 
+
+    float accel_target_cmss = error * 100.0f;
+    Vector3f accel_body = AP::ahrs().get_accel();
+    float accel_meas_x = accel_body.x ;
+
+    
+    //logout.write("time", AP_HAL::millis());
+    //logout.write("x error_value", error);
+    //logout.write("x pid_p", _pid_accel_x.get_p());
+    //logout.write("x pid_i", _pid_accel_x.get_i());
+    //logout.write("x pid_d", _pid_accel_x.get_d());
+    //logout.write("PID enable ?", (int)sub.chad_sensor.is_enable_PID(axis));
+
+    float thr_out = _pid_accel_x.update_all(accel_target_cmss, accel_meas_x, _dt);
+    thr_out += _pid_accel_x.get_ff();
+    thr_out *= 0.01f;
+    //logout.write("x thr_out", thr_out);
+
+    return constrain_float(thr_out, -1.0f , 1.0f);
+
+}
 ///
 /// Accessors
 ///

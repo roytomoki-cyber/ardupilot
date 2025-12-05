@@ -272,6 +272,7 @@ public:
     bool is_autopilot() const override { return false; }
     void control_depth();
     void control_lat();
+    void control_forward();
 
 protected:
 

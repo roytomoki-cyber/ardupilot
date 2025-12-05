@@ -16,6 +16,7 @@
 #include "AC_AttitudeControl.h"     // Attitude control library
 
 #include <AP_Logger/LogStructure.h>
+#include <AP_ChadMode/UDPSensor_Chadmode.h>
 
 // position controller default definitions
 #define POSCONTROL_ACCEL_XY                     100.0f  // default horizontal acceleration in cm/s/s.  This is overwritten by waypoint and loiter controllers
@@ -40,7 +41,7 @@
 class AC_PosControl
 {
 public:
-
+    friend class CHAD_Sensor; 
     /// Constructor
     AC_PosControl(AP_AHRS_View& ahrs, const AP_InertialNav& inav,
                   const class AP_Motors& motors, AC_AttitudeControl& attitude_control);
@@ -151,8 +152,15 @@ public:
     ///     Desired velocity and accelerations are added to these corrections as they are calculated
     ///     Kinematically consistent target position and desired velocity and accelerations should be provided before calling this function
     void update_xy_controller();
+
+
     float update_y_controller(float &error);
-    void csvlog(float error, float thr_out);
+    float update_y_controller(); 
+
+    float update_x_controller(float error);
+    float update_x_controller();
+
+
     ///
     /// Vertical position controller
     ///
@@ -533,11 +541,12 @@ protected:
     AC_PID_Basic    _pid_vel_z;         // Z axis velocity controller to convert climb rate error to desired acceleration
     AC_PID          _pid_accel_z;       // Z axis acceleration controller to convert desired acceleration to throttle output
     AC_PID          _pid_accel_y;       // Y axis acceleration controller to convert desired acceleration to throttle output
+    AC_PID          _pid_accel_x;       // X axis acceleration controller to convert desired acceleration to throttle output
 
     // internal variables
     float       _dt;                    // time difference (in seconds) since the last loop time
-    uint32_t    _last_update_xy_ticks; 
-    uint32_t    _last_update_y_ticks;// ticks of last last update_xy_controller call
+    uint32_t    _last_update_xy_ticks;  // ticks of last last update_xy_controller call
+    uint32_t    _last_update_y_ticks;   // ticks of last last update_y_controller call
     uint32_t    _last_update_z_ticks;   // ticks of last update_z_controller call
     float       _vel_max_xy_cms;        // max horizontal speed in cm/s used for kinematic shaping
     float       _vel_max_up_cms;        // max climb rate in cm/s used for kinematic shaping

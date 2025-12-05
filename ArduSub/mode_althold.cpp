@@ -1,5 +1,4 @@
 #include "Sub.h"
-#include <iostream>
 
 
 bool ModeAlthold::init(bool ignore_checks) {
@@ -100,8 +99,9 @@ void ModeAlthold::run_pre()
 
 void ModeAlthold::run_post()
 {
-    motors.set_forward(channel_forward->norm_input());
+    //motors.set_forward(channel_forward->norm_input());
     control_lat();
+    control_forward();
 
 }
 
@@ -128,28 +128,56 @@ void ModeAlthold::control_depth() {
 // Création d'un PID 1D de correction d'erreur
 void ModeAlthold::control_lat() {
     
+    ////Implémentation de l'erreur 
+    ////float input = channel_lateral->norm_input();
+    //static float error_y{0.0f};
+    //
+    //static float last_time_y = AP_HAL::millis()*0.001f;
+    //
+//
+    //float temps_s = AP_HAL::millis()*0.001f;
+    //float periode = 10.0f;
+    //float frec = 1/periode;
+    //float ampl = 0.5f;
+//
+    //if(fabsf(last_time_y - temps_s) > 0.01f){
+//
+    //    error_y = ampl*sinf(frec*temps_s*2*M_PI);
+    //    last_time_y = temps_s;
+    //}
+    ////Partie qui marche :  corrige l'erreur en position
+    
+    float thr_out = position_control->update_y_controller();
+    
+    motors.set_lateral(thr_out);
+
+
+}
+
+void ModeAlthold::control_forward() {
+    
     //Implémentation de l'erreur 
     //float input = channel_lateral->norm_input();
-    static float error{0.0f};
-    
-    static float last_time = AP_HAL::millis()*0.001f;
-    
+    //static float error_x{0.0f};
+    //
+    //static float last_time_x = AP_HAL::millis()*0.001f;
+    //
+    //float temps_s = AP_HAL::millis()*0.001f;
+    //float periode = 10.0f;
+    //float frec = 1/periode;
+    //float ampl = 0.5f;
+    //
+    //if(fabsf(last_time_x - temps_s) > 0.01f){
+    //  
+    //    error_x = ampl*cosf(frec*temps_s*2*M_PI);
+    //    last_time_x  = temps_s;
+    //}
+    ////Partie qui marche :  corrige l'erreur en position
+    //
 
-    float temps_s = AP_HAL::millis()*0.001f;
-    float periode = 10.0f;
-    float frec = 1/periode;
-    float ampl = 0.5f;
-
-    if(fabsf(last_time - temps_s) > 0.01f){
-
-        error = ampl*sinf(frec*temps_s*2*M_PI);
-        last_time = temps_s;
-    }
-    //Partie qui marche :  corrige l'erreur en position
+    float thr_out = position_control->update_x_controller();
     
-    float thr_out = position_control->update_y_controller(error);
-    
-    motors.set_lateral(-thr_out);
+    motors.set_forward(thr_out);
 
 
 }

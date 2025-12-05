@@ -56,6 +56,8 @@ void Sub::init_ardupilot()
     init_rc_out();              // sets up motors and output to escs
     init_joystick();            // joystick initialization
 
+    init_CHAD_Sensor();
+
 #if AP_RELAY_ENABLED
     relay.init();
 #endif

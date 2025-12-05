@@ -1,3 +1,4 @@
+
 #pragma once
 
 #include <AP_HAL/utility/OwnPtr.h>
@@ -7,10 +8,15 @@
 #include "SerialDevice.h"
 #include "Semaphores.h"
 
+#include <AP_ChadMode/UDPSensor_Chadmode.h>
+
+
 namespace Linux {
 
 class UARTDriver : public AP_HAL::UARTDriver {
-public:
+    friend class CHAD_Sensor;
+
+    public:
     UARTDriver(bool default_console);
 
     static UARTDriver *from(AP_HAL::UARTDriver *uart) {
@@ -58,8 +64,8 @@ public:
 
     virtual uint32_t get_baud_rate() const override { return _baudrate; }
 
-private:
     AP_HAL::OwnPtr<SerialDevice> _device;
+private:
     bool _console;
     volatile bool _in_timer;
     uint16_t _base_port;
